@@ -3,41 +3,22 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const goose = require('mongoose')
 
+const blogRouter = require('./controllers/blog')
+const middleware = require('./utils/middleware')
+
 const app = express()
-
-const Blog = goose.model('Blog', {
-  title: String,
-  author: String,
-  url: String,
-  likes: Number
-})
-
-module.exports = Blog
-
-app.use(cors())
-app.use(bodyParser.json())
 
 const mongoUrl = process.env.MONGODB_URI
 goose.connect(mongoUrl)
 goose.Promise = global.Promise
 
-app.get('/api/blogs', (req, resp) => {
-  Blog
-    .find({})
-    .then(blogs => {
-      resp.json(blogs)
-    })
-})
+app.use(cors())
+app.use(bodyParser.json())
+app.use(express.static('build'))
 
-app.post('/api/blogs', (req, resp) => {
-  const blog = new Blog(req.body)
-
-  blog
-    .save()
-    .then(result => {
-      resp.status(201).json(result)
-    })
-})
+app.use(middleware.logger)
+app.use('/api/blogs', blogRouter)
+app.use(middleware.error)
 
 const PORT = process.env.PORT || 3003
 app.listen(PORT, () => {
