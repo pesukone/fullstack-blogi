@@ -11,22 +11,27 @@ const formatBlog = (blog) => {
   }
 }
 
-blogRouter.get('/', (req, resp) => {
-  Blog
-    .find({})
-    .then(blogs => {
-      resp.json(blogs.map(formatBlog))
-    })
+blogRouter.get('/', async (req, resp) => {
+  const blogs = await Blog.find({})
+  resp.json(blogs.map(formatBlog))
 })
 
-blogRouter.post('/', (req, resp) => {
-  const blog = new Blog(req.body)
+blogRouter.post('/', async (req, resp) => {
+  try {
+    const body = req.body
 
-  blog
-    .save()
-    .then(result => {
-      resp.status(201).json(formatBlog(result))
-    })
+    if (!body.title || !body.author || !body.url) {
+      return resp.status(400).json({ error: 'required field missing' })
+    }
+
+    const blog = new Blog(req.body)
+
+    const savedBlog = await blog.save()
+    return resp.status(201).json(formatBlog(savedBlog))
+  } catch (exception) {
+    console.log(exception)
+    return resp.status(500).json({ error: 'Something went wrong...' })
+  }
 })
 
 module.exports = blogRouter
