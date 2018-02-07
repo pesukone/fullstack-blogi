@@ -32,11 +32,16 @@ module.exports = {
     "arrow-spacing": [
       "error", { "before": true, "after": true }
     ],
-    "no-console": 0
+    "no-console": 0,
+    "comma-dangle": [
+      "error", "never"
+    ]
   },
   "globals": {
     "test": true,
     "expect": true,
-    "describe": true
+    "describe": true,
+    "beforeAll": true,
+    "afterAll": true
   }
 };
