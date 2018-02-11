@@ -24,6 +24,10 @@ blogRouter.post('/', async (req, resp) => {
       return resp.status(400).json({ error: 'required field missing' })
     }
 
+    if (!body.likes) {
+      body.likes = 0
+    }
+
     const blog = new Blog(req.body)
 
     const savedBlog = await blog.save()

@@ -99,7 +99,7 @@ describe('post /api/blogs', () => {
 
   test('blog without author is not added', async () => {
     const newBlog = {
-      title: 'uus nimi',
+      title: 'uus otsake',
       url: 'uus urli',
       likes: 1337
     }
@@ -120,8 +120,8 @@ describe('post /api/blogs', () => {
 
   test('blog without url is not added', async () => {
     const newBlog = {
-      title: 'uus nimi',
-      url: 'uus urli',
+      title: 'uus otsake',
+      author: 'uus nimi',
       likes: 1337
     }
 
@@ -137,6 +137,25 @@ describe('post /api/blogs', () => {
       .get('/api/blogs')
 
     expect(resp.body.length).toBe(initialBlogs.body.length)
+  })
+
+  test('if no likes are given they are initialized to 0', async () => {
+    const newBlog = {
+      title: 'uudempi otsake',
+      author: 'uudempi nimi',
+      url: 'uudempi urli'
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    const resp = await api
+      .get('/api/blogs')
+
+    expect(resp.body.filter(blog => blog.title === newBlog.title)[0].likes).toBe(0)
   })
 })
 
