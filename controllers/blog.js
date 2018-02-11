@@ -20,7 +20,7 @@ blogRouter.post('/', async (req, resp) => {
   try {
     const body = req.body
 
-    if (!body.title || !body.author || !body.url) {
+    if (!body.title || !body.url) {
       return resp.status(400).json({ error: 'required field missing' })
     }
 
