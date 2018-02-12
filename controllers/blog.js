@@ -1,15 +1,13 @@
 const blogRouter = require('express').Router()
 const Blog = require('../models/blog')
 
-const formatBlog = (blog) => {
-  return {
-    id: blog._id,
-    title: blog.title,
-    author: blog.author,
-    url: blog.url,
-    likes: blog.likes
-  }
-}
+const formatBlog = (blog) => ({
+  id: blog._id,
+  title: blog.title,
+  author: blog.author,
+  url: blog.url,
+  likes: blog.likes
+})
 
 blogRouter.get('/', async (req, resp) => {
   const blogs = await Blog.find({})

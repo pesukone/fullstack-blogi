@@ -3,57 +3,40 @@ const { app, server } = require('../server')
 
 const api = supertest(app)
 const Blog = require('../models/blog')
+const {
+  initialBlogs,
+  blogsInDb,
+  postValidBlog,
+  postInvalidBlog
+} = require('./test_helper')
 
-const initialBlogs = [
-  {
-    title: 'otsake1',
-    author: 'nimi1',
-    url: 'urli1',
-    likes: 9
-  },
-  {
-    title: 'otsake2',
-    author: 'nimi2',
-    url: 'urli2',
-    likes: 8
-  }
-]
+describe('when there is initially some blogs saved', async () => {
+  beforeAll(async () => {
+    await Blog.remove({})
 
-beforeAll(async () => {
-  await Blog.remove({})
+    const blogObjects = initialBlogs.map(blog => new Blog(blog))
+    const promises = blogObjects.map(blog => blog.save())
+    await Promise.all(promises)
+  })
 
-  const blogObjects = initialBlogs.map(blog => new Blog(blog))
-  const promises = blogObjects.map(blog => blog.save())
-  await Promise.all(promises)
-})
+  test('all blogs are returned as json by GET /api/blogs', async () => {
+    const blogsInDatabase = await blogsInDb()
 
-describe('get /api/blogs', () => {
-  test('blogs are returned as json', async () => {
-    await api
+    const res = await api
       .get('/api/blogs')
       .expect(200)
       .expect('Content-Type', /application\/json/)
-  })
 
-  test('all blogs are returned', async () => {
-    const resp = await api
-      .get('/api/blogs')
+    expect(res.body.length).toBe(blogsInDatabase.length)
 
-    expect(resp.body.length).toBe(initialBlogs.length)
-  })
-
-  test('a specific blog is within the returned blogs', async () => {
-    const resp = await api
-      .get('/api/blogs')
-
-    const titles = resp.body.map(r => r.title)
-
-    expect(titles).toContain('otsake2')
+    blogsInDatabase.forEach((blog) => {
+      expect(res.body.map(b => b.title)).toContain(blog.title)
+    })
   })
 })
 
-describe('post /api/blogs', () => {
-  test('a valid blog can be added', async () => {
+describe('addition of a new blog', () => {
+  test('POST /api/blogs succeeds with valid data', async () => {
     const newBlog = {
       title: 'uus otsake',
       author: 'uus nimi',
@@ -61,82 +44,46 @@ describe('post /api/blogs', () => {
       likes: 1337
     }
 
-    await api
-      .post('/api/blogs')
-      .send(newBlog)
-      .expect(201)
-      .expect('Content-Type', /application\/json/)
+    const blogsAtStart = await blogsInDb()
 
-    const resp = await api
-      .get('/api/blogs')
+    await postValidBlog(api, newBlog)
 
-    const titles = resp.body.map(r => r.title)
+    const blogsAfterOperation = await blogsInDb()
 
-    expect(resp.body.length).toBe(initialBlogs.length + 1)
-    expect(titles).toContain('uus otsake')
+    expect(blogsAfterOperation.length).toBe(blogsAtStart.length + 1)
+    expect(blogsAfterOperation.map(b => b.title)).toContain('uus otsake')
   })
 
-  test('blog without title is not added', async () => {
+  test('POST /api/blogs fails with proper statuscode if title is missing', async () => {
     const newBlog = {
       author: 'uus nimi',
       url: 'uus urli',
       likes: 1337
     }
 
-    const initialBlogs = await api
-      .get('/api/blogs')
+    const blogsAtStart = await blogsInDb()
 
-    await api
-      .post('/api/blogs')
-      .send(newBlog)
-      .expect(400)
+    await postInvalidBlog(api, newBlog)
 
-    const resp = await api
-      .get('/api/blogs')
+    const blogsAfterOperation = await blogsInDb()
 
-    expect(resp.body.length).toBe(initialBlogs.body.length)
+    expect(blogsAfterOperation.length).toBe(blogsAtStart.length)
   })
 
-  test('blog without author is not added', async () => {
-    const newBlog = {
-      title: 'uus otsake',
-      url: 'uus urli',
-      likes: 1337
-    }
-
-    const initialBlogs = await api
-      .get('/api/blogs')
-
-    await api
-      .post('/api/blogs')
-      .send(newBlog)
-      .expect(400)
-
-    const resp = await api
-      .get('/api/blogs')
-
-    expect(resp.body.length).toBe(initialBlogs.body.length)
-  })
-
-  test('blog without url is not added', async () => {
+  test('POST /api/blogs fails with proper statuscode if url is missing', async () => {
     const newBlog = {
       title: 'uus otsake',
       author: 'uus nimi',
       likes: 1337
     }
 
-    const initialBlogs = await api
-      .get('/api/blogs')
+    const blogsAtStart = await blogsInDb()
 
-    await api
-      .post('/api/blogs')
-      .send(newBlog)
-      .expect(400)
+    await postInvalidBlog(api, newBlog)
 
-    const resp = await api
-      .get('/api/blogs')
+    const blogsAfterOperation = await blogsInDb()
 
-    expect(resp.body.length).toBe(initialBlogs.body.length)
+    expect(blogsAfterOperation.length).toBe(blogsAtStart.length)
   })
 
   test('if no likes are given they are initialized to 0', async () => {
@@ -146,16 +93,11 @@ describe('post /api/blogs', () => {
       url: 'uudempi urli'
     }
 
-    await api
-      .post('/api/blogs')
-      .send(newBlog)
-      .expect(201)
-      .expect('Content-Type', /application\/json/)
+    await postValidBlog(api, newBlog)
 
-    const resp = await api
-      .get('/api/blogs')
+    const blogsAfterOperation = await blogsInDb()
 
-    expect(resp.body.filter(blog => blog.title === newBlog.title)[0].likes).toBe(0)
+    expect(blogsAfterOperation.filter(blog => blog.title === newBlog.title)[0].likes).toBe(0)
   })
 })
 
