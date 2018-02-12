@@ -134,6 +134,48 @@ describe('when there is initially some blogs saved', async () => {
         .expect(404)
     })
   })
+
+  describe('updating a note', async () => {
+    let blogToUpdate
+
+    const updatedBlog = {
+      title: 'päivitetty otsake',
+      author: 'päivitetty nimi',
+      url: 'päivitetty urli',
+      likes: 5
+    }
+
+    beforeAll(async () => {
+      blogToUpdate = new Blog({
+        title: 'päivitettävä otsake',
+        author: 'päivitettävä nimi',
+        url: 'päivitettävä urli',
+        likes: 4
+      })
+
+      await blogToUpdate.save()
+    })
+
+    test('PUT /api/blogs/:id succeeds with proper statuscode', async () => {
+      await api
+        .put(`/api/blogs/${blogToUpdate._id}`)
+        .send(updatedBlog)
+
+      const blogsAfterOperation = await blogsInDb()
+
+      expect(blogsAfterOperation.map(b => b.title)).toContain(updatedBlog.title)
+      expect(blogsAfterOperation.map(b => b.author)).toContain(updatedBlog.author)
+      expect(blogsAfterOperation.map(b => b.url)).toContain(updatedBlog.url)
+      expect(blogsAfterOperation.map(b => b.likes)).toContain(updatedBlog.likes)
+    })
+
+    test('400 is returned by PUT /api/blogs/:id with nonexisting id', async () => {
+      await api
+        .put('/api/blogs/28913yrjhfnkadfjkbas')
+        .send(updatedBlog)
+        .expect(400)
+    })
+  })
 })
 
 afterAll(() => {
