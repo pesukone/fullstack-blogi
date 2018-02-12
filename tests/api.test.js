@@ -33,71 +33,106 @@ describe('when there is initially some blogs saved', async () => {
       expect(res.body.map(b => b.title)).toContain(blog.title)
     })
   })
-})
 
-describe('addition of a new blog', () => {
-  test('POST /api/blogs succeeds with valid data', async () => {
-    const newBlog = {
-      title: 'uus otsake',
-      author: 'uus nimi',
-      url: 'uus urli',
-      likes: 1337
-    }
+  describe('addition of a new blog', () => {
+    test('POST /api/blogs succeeds with valid data', async () => {
+      const newBlog = {
+        title: 'uus otsake',
+        author: 'uus nimi',
+        url: 'uus urli',
+        likes: 1337
+      }
 
-    const blogsAtStart = await blogsInDb()
+      const blogsAtStart = await blogsInDb()
 
-    await postValidBlog(api, newBlog)
+      await postValidBlog(api, newBlog)
 
-    const blogsAfterOperation = await blogsInDb()
+      const blogsAfterOperation = await blogsInDb()
 
-    expect(blogsAfterOperation.length).toBe(blogsAtStart.length + 1)
-    expect(blogsAfterOperation.map(b => b.title)).toContain('uus otsake')
+      expect(blogsAfterOperation.length).toBe(blogsAtStart.length + 1)
+      expect(blogsAfterOperation.map(b => b.title)).toContain('uus otsake')
+    })
+
+    test('POST /api/blogs fails with proper statuscode if title is missing', async () => {
+      const newBlog = {
+        author: 'uus nimi',
+        url: 'uus urli',
+        likes: 1337
+      }
+
+      const blogsAtStart = await blogsInDb()
+
+      await postInvalidBlog(api, newBlog)
+
+      const blogsAfterOperation = await blogsInDb()
+
+      expect(blogsAfterOperation.length).toBe(blogsAtStart.length)
+    })
+
+    test('POST /api/blogs fails with proper statuscode if url is missing', async () => {
+      const newBlog = {
+        title: 'uus otsake',
+        author: 'uus nimi',
+        likes: 1337
+      }
+
+      const blogsAtStart = await blogsInDb()
+
+      await postInvalidBlog(api, newBlog)
+
+      const blogsAfterOperation = await blogsInDb()
+
+      expect(blogsAfterOperation.length).toBe(blogsAtStart.length)
+    })
+
+    test('if no likes are given they are initialized to 0', async () => {
+      const newBlog = {
+        title: 'uudempi otsake',
+        author: 'uudempi nimi',
+        url: 'uudempi urli'
+      }
+
+      await postValidBlog(api, newBlog)
+
+      const blogsAfterOperation = await blogsInDb()
+
+      expect(blogsAfterOperation.filter(blog => blog.title === newBlog.title)[0].likes).toBe(0)
+    })
   })
 
-  test('POST /api/blogs fails with proper statuscode if title is missing', async () => {
-    const newBlog = {
-      author: 'uus nimi',
-      url: 'uus urli',
-      likes: 1337
-    }
+  describe('deletion of a note', async () => {
+    let addedBlog
 
-    const blogsAtStart = await blogsInDb()
+    beforeAll(async () => {
+      addedBlog = new Blog({
+        title: 'poistettava otsake',
+        author: 'poistettava nimi',
+        url: 'poistettava urli',
+        likes: 3
+      })
+      await addedBlog.save()
+    })
 
-    await postInvalidBlog(api, newBlog)
+    test('DELETE /api/blogs/:id succeeds with proper statuscode', async () => {
+      const blogsAtStart = await blogsInDb()
 
-    const blogsAfterOperation = await blogsInDb()
+      await api
+        .delete(`/api/blogs/${addedBlog._id}`)
+        .expect(204)
 
-    expect(blogsAfterOperation.length).toBe(blogsAtStart.length)
-  })
+      const blogsAfterOperation = await blogsInDb()
 
-  test('POST /api/blogs fails with proper statuscode if url is missing', async () => {
-    const newBlog = {
-      title: 'uus otsake',
-      author: 'uus nimi',
-      likes: 1337
-    }
+      expect(blogsAfterOperation.map(b => b.title)).not.toContain(addedBlog.title)
+      expect(blogsAfterOperation.length).toBe(blogsAtStart.length - 1)
+    })
 
-    const blogsAtStart = await blogsInDb()
+    test('404 is returned by DELETE /api/blogs/:id with nonexisting id', async () => {
+      const invalidId = '5a3d5da59070081a82a3445'
 
-    await postInvalidBlog(api, newBlog)
-
-    const blogsAfterOperation = await blogsInDb()
-
-    expect(blogsAfterOperation.length).toBe(blogsAtStart.length)
-  })
-
-  test('if no likes are given they are initialized to 0', async () => {
-    const newBlog = {
-      title: 'uudempi otsake',
-      author: 'uudempi nimi',
-      url: 'uudempi urli'
-    }
-
-    await postValidBlog(api, newBlog)
-
-    const blogsAfterOperation = await blogsInDb()
-
-    expect(blogsAfterOperation.filter(blog => blog.title === newBlog.title)[0].likes).toBe(0)
+      await api
+        .delete(`/api/notes/${invalidId}`)
+        .expect(404)
+    })
   })
 })
 
