@@ -8,7 +8,7 @@ const {
   blogsInDb,
   postValidBlog,
   postInvalidBlog
-} = require('./test_helper')
+} = require('./blog_helper')
 
 describe('when there is initially some blogs saved', async () => {
   beforeAll(async () => {
@@ -34,7 +34,7 @@ describe('when there is initially some blogs saved', async () => {
     })
   })
 
-  describe('addition of a new blog', () => {
+  describe('addition of a new blog', async () => {
     test('POST /api/blogs succeeds with valid data', async () => {
       const newBlog = {
         title: 'uus otsake',
