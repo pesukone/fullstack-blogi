@@ -20,10 +20,11 @@ app.use(bodyParser.json())
 app.use(express.static('build'))
 
 app.use(middleware.logger)
+app.use(middleware.tokenExtractor)
+app.use(middleware.error)
 app.use('/api/blogs', blogRouter)
 app.use('/api/users', userRouter)
 app.use('/api/login', loginRouter)
-app.use(middleware.error)
 
 const server = http.createServer(app)
 
