@@ -1,17 +1,12 @@
 const blogRouter = require('express').Router()
 const Blog = require('../models/blog')
-
-const formatBlog = (blog) => ({
-  id: blog._id,
-  title: blog.title,
-  author: blog.author,
-  url: blog.url,
-  likes: blog.likes
-})
+const User = require('../models/user')
 
 blogRouter.get('/', async (req, resp) => {
-  const blogs = await Blog.find({})
-  resp.json(blogs.map(formatBlog))
+  const blogs = await Blog
+    .find({})
+    .populate('user')
+  resp.json(blogs.map(Blog.format))
 })
 
 blogRouter.post('/', async (req, resp) => {
@@ -26,10 +21,16 @@ blogRouter.post('/', async (req, resp) => {
       body.likes = 0
     }
 
-    const blog = new Blog(req.body)
+    const user = await User.findOne()
+
+    const blog = new Blog({ ...body, user: user._id })
 
     const savedBlog = await blog.save()
-    return resp.status(201).json(formatBlog(savedBlog))
+
+    user.blogs = user.blogs.concat(savedBlog._id)
+    await user.save()
+
+    return resp.status(201).json(Blog.format(savedBlog))
   } catch (exception) {
     console.log(exception)
     return resp.status(500).json({ error: 'Something went wrong...' })
