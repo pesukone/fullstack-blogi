@@ -59,11 +59,32 @@ blogRouter.post('/', async (req, resp) => {
 
 blogRouter.delete('/:id', async (req, resp) => {
   try {
-    await Blog.findByIdAndRemove(req.params.id)
-    resp.status(204).end()
+    const token = jwt.verify(req.token, process.env.SECRET)
+
+    if (!token) {
+      return resp.status(401).json({ error: 'token missing or invalid' })
+    }
+
+    const user = await User.findById(token.id)
+    const blog = await Blog.findById(req.params.id)
+
+    if (!blog) {
+      return resp.status(404).end()
+    }
+
+    if (user.id === blog.user.toString()) {
+      blog.remove()
+      resp.status(204).end()
+    } else {
+      resp.status(401).send({ error: 'delete unauthorized' })
+    }
   } catch (exception) {
-    console.log(exception)
-    resp.status(400).send({ error: 'malformed id' })
+    if (exception.name === 'JsonWebTokenError') {
+      resp.status(401).json({ error: exception.message })
+    } else {
+      console.log(exception)
+      return resp.status(500).json({ error: 'Something went wrong...' })
+    }
   }
 })
 
