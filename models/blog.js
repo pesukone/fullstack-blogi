@@ -10,6 +10,7 @@ const blogSchema = new goose.Schema({
 
 blogSchema.statics.format = (blog) => ({
   id: blog._id,
+  title: blog.title,
   author: blog.author,
   url: blog.url,
   likes: blog.likes,
