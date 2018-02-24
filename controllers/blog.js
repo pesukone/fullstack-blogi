@@ -11,7 +11,6 @@ const getTokenFrom = (req) => {
     null
 }
 
-
 blogRouter.get('/', async (req, resp) => {
   const blogs = await Blog
     .find({})
@@ -42,6 +41,8 @@ blogRouter.post('/', async (req, resp) => {
     const blog = new Blog({ ...body, user: user._id })
 
     const savedBlog = await blog.save()
+
+    await Blog.populate(savedBlog, 'user')
 
     user.blogs = user.blogs.concat(savedBlog._id)
     await user.save()
@@ -99,8 +100,8 @@ blogRouter.put('/:id', async (req, resp) => {
   }
 
   try {
-    const updated = await Blog.findByIdAndUpdate(req.params.id, blog, { new: true })
-    resp.json(formatBlog(updated))
+    const updated = await Blog.findByIdAndUpdate(req.params.id, blog, { new: true }).populate('user')
+    resp.json(Blog.format(updated))
   } catch (exception) {
     resp.status(400).send({ error: 'malformed id' })
   }
